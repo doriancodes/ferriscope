@@ -3,17 +3,15 @@ name: Deploy mdBook to GitHub Pages
 on:
   push:
     branches:
-      - main
-  pull_request:
+      - main  # or master, depending on your default branch
 
+# Add these permissions
 permissions:
   contents: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,12 +21,10 @@ jobs:
           mdbook-version: 'latest'
 
       - name: Build Book
-        run: mdbook build docs
+        run: mdbook build docs/
 
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/book
-          force_orphan: true 
