@@ -1,18 +1,30 @@
-use chrono::Utc;
+#![feature(test)]
+
+extern crate test;
+
 use criterion::{criterion_group, criterion_main, Criterion};
 use ferriscope::filters;
 use ferriscope::ui::PacketInfo;
+use chrono::Utc;
 
-pub fn filter_benchmark(c: &mut Criterion) {
-    // Initialize pcap with loopback interface and no promiscuous mode
-    let _ = pcap::Capture::<pcap::Inactive>::from_device("lo0") // lo0 is macOS loopback
-        .unwrap()
-        .promisc(false) // Explicitly disable promiscuous mode
+fn create_test_capture() -> Result<pcap::Capture<pcap::Active>, pcap::Error> {
+    #[cfg(target_os = "macos")]
+    let device = "lo0";
+    #[cfg(not(target_os = "macos"))]
+    let device = "lo";
+
+    pcap::Capture::<pcap::Inactive>::from_device(device)?
+        .promisc(false)
         .snaplen(65535)
         .timeout(1000)
-        .immediate_mode(true) // Add immediate mode for better performance
+        .immediate_mode(true)
+        .buffer_size(1024 * 1024)
         .open()
-        .unwrap();
+}
+
+pub fn filter_benchmark(c: &mut Criterion) {
+    // Attempt to create capture, but ignore any errors
+    let _cap = create_test_capture().ok();  // Using .ok() converts Result to Option and ignores errors
 
     let packet_info = PacketInfo {
         timestamp: Utc::now(),
@@ -22,8 +34,11 @@ pub fn filter_benchmark(c: &mut Criterion) {
         length: 64,
         info: "TCP packet".to_string(),
         raw_data: vec![
-            0x45, 0x00, 0x00, 0x28, 0x00, 0x00, 0x40, 0x00, 0x40, 0x06, 0x00, 0x00, 0x7f, 0x00,
-            0x00, 0x01, 0xc0, 0xa8, 0x01, 0x01,
+            0x45, 0x00, 0x00, 0x28,
+            0x00, 0x00, 0x40, 0x00,
+            0x40, 0x06, 0x00, 0x00,
+            0x7f, 0x00, 0x00, 0x01,
+            0xc0, 0xa8, 0x01, 0x01
         ],
     };
 
