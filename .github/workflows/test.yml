@@ -1,0 +1,59 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install libpcap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpcap-dev
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+  bench:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install libpcap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpcap-dev
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run benchmarks
+        run: |
+          sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/filter_bench-*
+          cargo bench 
