@@ -53,7 +53,12 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Run benchmarks
+      - name: Build benchmarks
+        run: cargo bench --no-run
+
+      - name: Set capabilities and run benchmarks
         run: |
           sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/filter_bench-*
-          cargo bench 
+          sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/capture_bench-*
+          sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/analyzer_bench-*
+          cargo 
