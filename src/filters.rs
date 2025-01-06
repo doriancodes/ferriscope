@@ -77,6 +77,21 @@ impl PacketFilter {
     }
 }
 
+pub fn parse_filter(expression: &str) -> Result<String, Box<dyn std::error::Error>> {
+    // Create a temporary capture handle to validate the filter
+    let cap = pcap::Capture::<pcap::Inactive>::from_device("any")?;
+    let mut cap = cap.promisc(true)
+                    .snaplen(65535)
+                    .timeout(1000)
+                    .open()?;
+    
+    // Try to set the filter with optimization enabled
+    match cap.filter(expression, true) {
+        Ok(_) => Ok(expression.to_string()),
+        Err(e) => Err(Box::new(e))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,5 +200,18 @@ mod tests {
         
         assert!(filter.matches(&tcp_packet));
         assert!(!filter.matches(&udp_packet));
+    }
+
+    #[test]
+    fn test_parse_valid_filter() {
+        let result = parse_filter("tcp port 80");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "tcp port 80");
+    }
+
+    #[test]
+    fn test_parse_invalid_filter() {
+        let result = parse_filter("invalid filter");
+        assert!(result.is_err());
     }
 }

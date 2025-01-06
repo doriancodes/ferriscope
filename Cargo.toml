@@ -3,6 +3,14 @@ name = "ferriscope"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "ferriscope"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ferriscope"
+path = "src/main.rs"
+
 [dependencies]
 pcap = "1.1.0"
 tokio = { version = "1.28", features = ["full"] }
@@ -17,6 +25,22 @@ etherparse = "0.13"
 ctrlc = "3.4"
 chrono = "0.4"
 ratatui = "0.29.0"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+tokio = { version = "1.0", features = ["full"] }
+
+[[bench]]
+name = "capture_bench"
+harness = false
+
+[[bench]]
+name = "analyzer_bench"
+harness = false
+
+[[bench]]
+name = "filter_bench"
+harness = false
 
 
 
