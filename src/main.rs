@@ -26,6 +26,7 @@ struct Args {
 }
 
 #[tokio::main]
+#[allow(clippy::needless_return)]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let args = Args::parse();
 

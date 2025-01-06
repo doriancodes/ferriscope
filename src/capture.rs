@@ -42,7 +42,7 @@ pub async fn start_capture(
 
             match cap.next_packet() {
                 Ok(packet) => {
-                    if let Ok(parsed) = SlicedPacket::from_ethernet(&packet.data) {
+                    if let Ok(parsed) = SlicedPacket::from_ethernet(packet.data) {
                         let protocol = get_protocol_name(&parsed);
                         let (source, destination) = match &parsed.ip {
                             Some(InternetSlice::Ipv4(ref header, _)) => {
@@ -90,7 +90,7 @@ pub async fn start_capture(
 
                         let packet_info = PacketInfo {
                             timestamp: chrono::DateTime::from_timestamp(
-                                packet.header.ts.tv_sec as i64,
+                                packet.header.ts.tv_sec,
                                 packet.header.ts.tv_usec as u32 * 1000
                             ).unwrap_or_default(),
                             protocol,

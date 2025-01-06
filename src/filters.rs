@@ -77,6 +77,12 @@ impl PacketFilter {
     }
 }
 
+impl Default for PacketFilter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub fn parse_filter(expression: &str) -> Result<String, Box<dyn std::error::Error>> {
     let device = if cfg!(target_os = "macos") {
         "lo0"
