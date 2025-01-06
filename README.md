@@ -268,3 +268,8 @@ Get-NetAdapter
 - Save to file for long-term analysis
 - Use interface name from system's network configuration
 - Check permissions if capture fails to start
+
+## Documentation
+
+The full documentation is available at:
+- https://doriancodes.github.io/ferriscope/
