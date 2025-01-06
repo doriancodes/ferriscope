@@ -1,30 +1,18 @@
-#![feature(test)]
-
-extern crate test;
-
 use criterion::{criterion_group, criterion_main, Criterion};
 use ferriscope::filters;
 use ferriscope::ui::PacketInfo;
 use chrono::Utc;
 
-fn create_test_capture() -> Result<pcap::Capture<pcap::Active>, pcap::Error> {
-    #[cfg(target_os = "macos")]
-    let device = "lo0";
-    #[cfg(not(target_os = "macos"))]
-    let device = "any";
-
-    pcap::Capture::<pcap::Inactive>::from_device(device)?
-        .promisc(false)
+pub fn filter_benchmark(c: &mut Criterion) {
+    // Initialize pcap with loopback interface and no promiscuous mode
+    let _ = pcap::Capture::<pcap::Inactive>::from_device("lo0")  // lo0 is macOS loopback
+        .unwrap()
+        .promisc(false)  // Explicitly disable promiscuous mode
         .snaplen(65535)
         .timeout(1000)
-        .immediate_mode(true)
-        .buffer_size(1024 * 1024)
+        .immediate_mode(true)  // Add immediate mode for better performance
         .open()
-}
-
-pub fn filter_benchmark(c: &mut Criterion) {
-    // Attempt to create capture, but ignore any errors
-    let _cap = create_test_capture().ok();  // Using .ok() converts Result to Option and ignores errors
+        .unwrap();
 
     let packet_info = PacketInfo {
         timestamp: Utc::now(),

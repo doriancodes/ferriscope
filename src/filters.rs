@@ -78,12 +78,27 @@ impl PacketFilter {
 }
 
 pub fn parse_filter(expression: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let device = if cfg!(target_os = "macos") {
+        "lo0"
+    } else {
+        "any"
+    };
+
     // Create a temporary capture handle to validate the filter
-    let cap = pcap::Capture::<pcap::Inactive>::from_device("any")?;
-    let mut cap = cap.promisc(true)
-                    .snaplen(65535)
-                    .timeout(1000)
-                    .open()?;
+    let cap = pcap::Capture::<pcap::Inactive>::from_device(device)?;
+
+    #[cfg(target_os = "macos")]
+    let mut cap = cap
+        .snaplen(65535)
+        .timeout(1000)
+        .open()?;
+
+    #[cfg(not(target_os = "macos"))]
+    let mut cap = cap
+        .snaplen(65535)
+        .timeout(1000)
+        .promisc(true)
+        .open()?;
     
     // Try to set the filter with optimization enabled
     match cap.filter(expression, true) {
@@ -110,6 +125,22 @@ mod tests {
             info: String::new(),
             length: 0,
             timestamp: Utc::now(),
+        }
+    }
+
+    fn get_test_interface() -> String {
+        // Try to find a suitable interface for testing
+        if cfg!(target_os = "macos") {
+            "lo0".to_string()
+        } else if cfg!(target_os = "linux") {
+            "lo".to_string()
+        } else {
+            // Get the first available interface as fallback
+            pcap::Device::list()
+                .unwrap()
+                .first()
+                .map(|dev| dev.name.clone())
+                .unwrap_or_else(|| "any".to_string())
         }
     }
 
@@ -204,13 +235,37 @@ mod tests {
 
     #[test]
     fn test_parse_valid_filter() {
+        let interface = get_test_interface();
+        
+        // Initialize pcap with the appropriate interface
+        let _ = pcap::Capture::<pcap::Inactive>::from_device(interface.as_str())
+            .unwrap()
+            .promisc(false)
+            .snaplen(65535)
+            .timeout(1000)
+            .immediate_mode(true)
+            .open()
+            .unwrap();
+
         let result = parse_filter("tcp port 80");
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "Filter parsing failed: {:?}", result.err());
         assert_eq!(result.unwrap(), "tcp port 80");
     }
 
     #[test]
     fn test_parse_invalid_filter() {
+        let interface = get_test_interface();
+        
+        // Initialize pcap with the appropriate interface
+        let _ = pcap::Capture::<pcap::Inactive>::from_device(interface.as_str())
+            .unwrap()
+            .promisc(false)
+            .snaplen(65535)
+            .timeout(1000)
+            .immediate_mode(true)
+            .open()
+            .unwrap();
+
         let result = parse_filter("invalid filter");
         assert!(result.is_err());
     }

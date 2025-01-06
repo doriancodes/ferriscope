@@ -1,11 +1,7 @@
-#![feature(test)]
-
-extern crate test;
-
 use criterion::{criterion_group, criterion_main, Criterion};
 use ferriscope::analyzer;
 use ferriscope::ui::PacketInfo;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 
 pub fn analyzer_benchmark(c: &mut Criterion) {
     // Create sample TCP packet info
