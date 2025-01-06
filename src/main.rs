@@ -29,28 +29,19 @@ struct Args {
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let args = Args::parse();
 
-    // If --list flag is present, list interfaces and exit
-    if args.list {
-        println!("Available network interfaces:");
-        for device in pcap::Device::list()? {
-            println!("- {} {}", device.name, device.desc.unwrap_or_default());
-        }
-        return Ok(());
-    }
-
     // Create channels
     let (packet_tx, packet_rx) = mpsc::channel::<ui::PacketInfo>(1000);
-    let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>(1);
+    let (_shutdown_tx, shutdown_rx) = mpsc::channel::<()>(1);
 
     // Initialize the UI with packet receiver
     let mut app = ui::App::new(packet_rx)?;
     
     // Start capture in background
-    let capture_handle = tokio::spawn(async move {
+    let _capture_handle = tokio::spawn(async move {
         if let Err(e) = capture::start_capture(
             args.interface,
             args.filter,
-            args.output,
+            // args.output,
             shutdown_rx,
             packet_tx,
         ).await {

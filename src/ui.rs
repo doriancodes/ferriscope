@@ -3,7 +3,6 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
     layout::{Layout, Constraint, Direction},
     Terminal,
-    text::Text,
     style::{Style, Color},
 };
 use crossterm::{
@@ -12,7 +11,6 @@ use crossterm::{
     execute,
 };
 use std::error::Error;
-use chrono::Utc;
 use tokio::sync::mpsc;
 use std::io::stdout;
 use std::sync::atomic::{AtomicBool, Ordering};

@@ -2,13 +2,12 @@ use pcap::{Device, Capture};
 use tokio::sync::mpsc;
 use std::error::Error;
 use crate::ui::PacketInfo;
-use chrono::Utc;
 use etherparse::{SlicedPacket, InternetSlice, TransportSlice};
 
 pub async fn start_capture(
     interface: Option<String>,
     filter: Option<String>,
-    output: Option<String>,
+    // output: Option<String>,
     mut shutdown_rx: mpsc::Receiver<()>,
     packet_tx: mpsc::Sender<PacketInfo>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
@@ -162,7 +161,6 @@ mod tests {
     use super::*;
     use tokio::sync::mpsc;
     use tokio::time::{timeout, Duration};
-    use std::env;
 
     fn has_capture_permissions() -> bool {
         // Try to open the default device
@@ -190,7 +188,7 @@ mod tests {
             start_capture(
                 None, 
                 None, 
-                None, 
+                // None, 
                 shutdown_rx,
                 packet_tx
             ).await
@@ -229,7 +227,7 @@ mod tests {
                     start_capture(
                         Some(dev_name),
                         None,
-                        None,
+                        // None,
                         shutdown_rx,
                         packet_tx
                     ).await
@@ -267,7 +265,7 @@ mod tests {
             start_capture(
                 None,
                 Some("tcp".to_string()),
-                None,
+                // None,
                 shutdown_rx,
                 packet_tx
             ).await
@@ -291,13 +289,13 @@ mod tests {
     // These tests don't require capture permissions
     #[tokio::test]
     async fn test_invalid_interface() {
-        let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>(1);
+        let (_, shutdown_rx) = mpsc::channel::<()>(1);
         let (packet_tx, _packet_rx) = mpsc::channel::<PacketInfo>(1000);
         
         let result = start_capture(
             Some("invalid_device".to_string()),
             None,
-            None,
+            // None,
             shutdown_rx,
             packet_tx
         ).await;
@@ -307,13 +305,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_invalid_filter() {
-        let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>(1);
+        let (_, shutdown_rx) = mpsc::channel::<()>(1);
         let (packet_tx, _packet_rx) = mpsc::channel::<PacketInfo>(1000);
         
         let result = start_capture(
             None,
             Some("invalid filter syntax".to_string()),
-            None,
+            // None,
             shutdown_rx,
             packet_tx
         ).await;
