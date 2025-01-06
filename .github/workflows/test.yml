@@ -28,7 +28,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Run tests
-        run: cargo test --verbose
+        run: sudo -E cargo test --verbose
 
       - name: Run clippy
         run: cargo clippy -- -D warnings
@@ -54,7 +54,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build benchmarks
-        run: cargo bench --no-run
+        run: sudo -E cargo bench --no-run
 
       - name: Set capabilities and run benchmarks
         run: |
