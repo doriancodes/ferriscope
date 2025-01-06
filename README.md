@@ -273,3 +273,40 @@ Get-NetAdapter
 
 The full documentation is available at:
 - https://doriancodes.github.io/ferriscope/
+
+## Running Benchmarks
+
+### Local Benchmarks
+```bash
+# Run all benchmarks
+sudo -E cargo bench
+
+# Run specific benchmark
+sudo -E cargo bench capture_bench
+```
+
+### Docker Benchmarks
+For consistent benchmark environments across different machines, you can use Docker:
+
+```bash
+# Clean up any existing containers
+docker-compose down -v
+
+# Build fresh image
+docker-compose build --no-cache
+
+# Run benchmarks
+docker-compose run bench
+```
+
+The Docker setup ensures:
+- Consistent environment for benchmarking
+- Required dependencies are installed
+- Network interfaces are properly configured
+- Appropriate permissions for packet capture
+
+### Benchmark Configuration
+- Default sample size: 10
+- Measurement time: 1 second per iteration
+- Captures packets on loopback interface
+- Tests both filtered and unfiltered capture
