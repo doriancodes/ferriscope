@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         if let Err(e) = capture::start_capture(
             args.interface,
             args.filter,
-            // args.output,
+            args.output,
             shutdown_rx,
             packet_tx,
         )

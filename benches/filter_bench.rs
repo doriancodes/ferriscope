@@ -2,10 +2,10 @@
 
 extern crate test;
 
+use chrono::Utc;
 use criterion::{criterion_group, criterion_main, Criterion};
 use ferriscope::filters;
 use ferriscope::ui::PacketInfo;
-use chrono::Utc;
 
 fn create_test_capture() -> Result<pcap::Capture<pcap::Active>, pcap::Error> {
     #[cfg(target_os = "macos")]
@@ -24,7 +24,7 @@ fn create_test_capture() -> Result<pcap::Capture<pcap::Active>, pcap::Error> {
 
 pub fn filter_benchmark(c: &mut Criterion) {
     // Attempt to create capture, but ignore any errors
-    let _cap = create_test_capture().ok();  // Using .ok() converts Result to Option and ignores errors
+    let _cap = create_test_capture().ok(); // Using .ok() converts Result to Option and ignores errors
 
     let packet_info = PacketInfo {
         timestamp: Utc::now(),
@@ -34,11 +34,8 @@ pub fn filter_benchmark(c: &mut Criterion) {
         length: 64,
         info: "TCP packet".to_string(),
         raw_data: vec![
-            0x45, 0x00, 0x00, 0x28,
-            0x00, 0x00, 0x40, 0x00,
-            0x40, 0x06, 0x00, 0x00,
-            0x7f, 0x00, 0x00, 0x01,
-            0xc0, 0xa8, 0x01, 0x01
+            0x45, 0x00, 0x00, 0x28, 0x00, 0x00, 0x40, 0x00, 0x40, 0x06, 0x00, 0x00, 0x7f, 0x00,
+            0x00, 0x01, 0xc0, 0xa8, 0x01, 0x01,
         ],
     };
 
