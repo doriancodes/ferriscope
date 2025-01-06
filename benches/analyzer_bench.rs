@@ -1,7 +1,7 @@
+use chrono::Utc;
 use criterion::{criterion_group, criterion_main, Criterion};
 use ferriscope::analyzer;
 use ferriscope::ui::PacketInfo;
-use chrono::Utc;
 
 pub fn analyzer_benchmark(c: &mut Criterion) {
     // Create sample TCP packet info
@@ -15,10 +15,9 @@ pub fn analyzer_benchmark(c: &mut Criterion) {
         raw_data: vec![
             // Sample TCP packet data
             0x45, 0x00, 0x00, 0x28, // IPv4 header
-            0x00, 0x00, 0x40, 0x00,
-            0x40, 0x06, 0x00, 0x00,
-            0x7f, 0x00, 0x00, 0x01, // Source IP
-            0xc0, 0xa8, 0x01, 0x01  // Dest IP
+            0x00, 0x00, 0x40, 0x00, 0x40, 0x06, 0x00, 0x00, 0x7f, 0x00, 0x00,
+            0x01, // Source IP
+            0xc0, 0xa8, 0x01, 0x01, // Dest IP
         ],
     };
 
@@ -33,10 +32,9 @@ pub fn analyzer_benchmark(c: &mut Criterion) {
         raw_data: vec![
             // Sample UDP packet data
             0x45, 0x00, 0x00, 0x1c, // IPv4 header
-            0x00, 0x00, 0x40, 0x00,
-            0x40, 0x11, 0x00, 0x00,
-            0x7f, 0x00, 0x00, 0x01, // Source IP
-            0xc0, 0xa8, 0x01, 0x01  // Dest IP
+            0x00, 0x00, 0x40, 0x00, 0x40, 0x11, 0x00, 0x00, 0x7f, 0x00, 0x00,
+            0x01, // Source IP
+            0xc0, 0xa8, 0x01, 0x01, // Dest IP
         ],
     };
 
@@ -50,4 +48,4 @@ pub fn analyzer_benchmark(c: &mut Criterion) {
 }
 
 criterion_group!(benches, analyzer_benchmark);
-criterion_main!(benches); 
+criterion_main!(benches);

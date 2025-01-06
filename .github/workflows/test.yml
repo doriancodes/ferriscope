@@ -29,9 +29,7 @@ jobs:
 
       - name: Run tests
         run: |
-          # Build tests first
           cargo test --no-run
-          # Run tests with sudo using full path
           sudo -E env "PATH=$PATH" cargo test --verbose
 
       - name: Run clippy
@@ -57,12 +55,17 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Build benchmarks
-        run: cargo bench --no-run
-
-      - name: Set capabilities and run benchmarks
+      - name: Build and run benchmarks
         run: |
-          sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/filter_bench-*
-          sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/capture_bench-*
-          sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/analyzer_bench-*
-          sudo -E env "PATH=$PATH"cargo bench 
+          # Build benchmarks first
+          cargo bench --no-run
+          
+          # Find and set capabilities for each benchmark binary
+          for bench in target/release/deps/*_bench-*; do
+            if [ -f "$bench" ] && [ -x "$bench" ]; then
+              sudo setcap cap_net_raw,cap_net_admin=eip "$bench"
+            fi
+          done
+          
+          # Run benchmarks
+          sudo -E env "PATH=$PATH" cargo bench 

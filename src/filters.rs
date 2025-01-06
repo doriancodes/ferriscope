@@ -1,5 +1,5 @@
-use std::str::FromStr;
 use crate::ui::PacketInfo;
+use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct PacketFilter {
@@ -56,8 +56,8 @@ impl PacketFilter {
 
         // Check port match if filter is set
         if let Some(port) = self.port {
-            let has_port = packet.source.contains(&format!(":{}", port)) ||
-                          packet.destination.contains(&format!(":{}", port));
+            let has_port = packet.source.contains(&format!(":{}", port))
+                || packet.destination.contains(&format!(":{}", port));
             if !has_port {
                 return false;
             }
@@ -94,22 +94,15 @@ pub fn parse_filter(expression: &str) -> Result<String, Box<dyn std::error::Erro
     let cap = pcap::Capture::<pcap::Inactive>::from_device(device)?;
 
     #[cfg(target_os = "macos")]
-    let mut cap = cap
-        .snaplen(65535)
-        .timeout(1000)
-        .open()?;
+    let mut cap = cap.snaplen(65535).timeout(1000).open()?;
 
     #[cfg(not(target_os = "macos"))]
-    let mut cap = cap
-        .snaplen(65535)
-        .timeout(1000)
-        .promisc(true)
-        .open()?;
-    
+    let mut cap = cap.snaplen(65535).timeout(1000).promisc(true).open()?;
+
     // Try to set the filter with optimization enabled
     match cap.filter(expression, true) {
         Ok(_) => Ok(expression.to_string()),
-        Err(e) => Err(Box::new(e))
+        Err(e) => Err(Box::new(e)),
     }
 }
 
@@ -157,7 +150,7 @@ mod tests {
 
         let tcp_packet = create_test_packet("TCP", Some(80), "192.168.1.1");
         let udp_packet = create_test_packet("UDP", Some(53), "192.168.1.1");
-        
+
         assert!(filter.matches(&tcp_packet));
         assert!(!filter.matches(&udp_packet));
     }
@@ -169,7 +162,7 @@ mod tests {
 
         let http_packet = create_test_packet("TCP", Some(80), "192.168.1.1");
         let https_packet = create_test_packet("TCP", Some(443), "192.168.1.1");
-        
+
         assert!(filter.matches(&http_packet));
         assert!(!filter.matches(&https_packet));
     }
@@ -181,7 +174,7 @@ mod tests {
 
         let matching_packet = create_test_packet("TCP", Some(80), "192.168.1.1");
         let non_matching_packet = create_test_packet("TCP", Some(80), "192.168.1.2");
-        
+
         assert!(filter.matches(&matching_packet));
         assert!(!filter.matches(&non_matching_packet));
     }
@@ -197,7 +190,7 @@ mod tests {
         let wrong_protocol = create_test_packet("UDP", Some(80), "192.168.1.1");
         let wrong_port = create_test_packet("TCP", Some(443), "192.168.1.1");
         let wrong_host = create_test_packet("TCP", Some(80), "192.168.1.2");
-        
+
         assert!(filter.matches(&matching_packet));
         assert!(!filter.matches(&wrong_protocol));
         assert!(!filter.matches(&wrong_port));
@@ -214,7 +207,7 @@ mod tests {
         assert_eq!(Protocol::from_str("ICMP").unwrap(), Protocol::Icmp);
         assert_eq!(Protocol::from_str("dns").unwrap(), Protocol::Dns);
         assert_eq!(Protocol::from_str("DNS").unwrap(), Protocol::Dns);
-        
+
         assert!(Protocol::from_str("invalid").is_err());
     }
 
@@ -222,8 +215,11 @@ mod tests {
     fn test_empty_filter() {
         let filter = PacketFilter::new();
         let packet = create_test_packet("TCP", Some(80), "192.168.1.1");
-        
-        assert!(filter.matches(&packet), "Empty filter should match all packets");
+
+        assert!(
+            filter.matches(&packet),
+            "Empty filter should match all packets"
+        );
     }
 
     #[test]
@@ -234,7 +230,7 @@ mod tests {
 
         let tcp_packet = create_test_packet("TCP", Some(80), "192.168.1.1");
         let udp_packet = create_test_packet("UDP", Some(53), "192.168.1.1");
-        
+
         assert!(filter.matches(&tcp_packet));
         assert!(!filter.matches(&udp_packet));
     }
@@ -242,7 +238,7 @@ mod tests {
     #[test]
     fn test_parse_valid_filter() {
         let interface = get_test_interface();
-        
+
         // Initialize pcap with the appropriate interface
         let _ = pcap::Capture::<pcap::Inactive>::from_device(interface.as_str())
             .unwrap()
@@ -261,7 +257,7 @@ mod tests {
     #[test]
     fn test_parse_invalid_filter() {
         let interface = get_test_interface();
-        
+
         // Initialize pcap with the appropriate interface
         let _ = pcap::Capture::<pcap::Inactive>::from_device(interface.as_str())
             .unwrap()

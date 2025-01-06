@@ -1,8 +1,8 @@
-use pcap::{Device, Capture};
-use tokio::sync::mpsc;
-use std::error::Error;
 use crate::ui::PacketInfo;
-use etherparse::{SlicedPacket, InternetSlice, TransportSlice};
+use etherparse::{InternetSlice, SlicedPacket, TransportSlice};
+use pcap::{Capture, Device};
+use std::error::Error;
+use tokio::sync::mpsc;
 
 pub async fn start_capture(
     interface: Option<String>,
@@ -17,7 +17,7 @@ pub async fn start_capture(
             .into_iter()
             .find(|dev| dev.name == name)
             .ok_or("Device not found")?,
-        None => Device::lookup()?.ok_or("No default device found")?
+        None => Device::lookup()?.ok_or("No default device found")?,
     };
 
     // Create capture handle
@@ -33,82 +33,77 @@ pub async fn start_capture(
     }
 
     // Spawn a separate thread for packet capture
-    let capture_thread = std::thread::spawn(move || {
-        loop {
-            if shutdown_rx.try_recv().is_ok() {
-                println!("Capture thread received shutdown signal");
-                break;
-            }
+    let capture_thread = std::thread::spawn(move || loop {
+        if shutdown_rx.try_recv().is_ok() {
+            println!("Capture thread received shutdown signal");
+            break;
+        }
 
-            match cap.next_packet() {
-                Ok(packet) => {
-                    if let Ok(parsed) = SlicedPacket::from_ethernet(packet.data) {
-                        let protocol = get_protocol_name(&parsed);
-                        let (source, destination) = match &parsed.ip {
-                            Some(InternetSlice::Ipv4(ref header, _)) => {
-                                match &parsed.transport {
-                                    Some(TransportSlice::Tcp(tcp)) => (
-                                        format!("{}:{}", header.source_addr(), tcp.source_port()),
-                                        format!("{}:{}", header.destination_addr(), tcp.destination_port())
-                                    ),
-                                    Some(TransportSlice::Udp(udp)) => (
-                                        format!("{}:{}", header.source_addr(), udp.source_port()),
-                                        format!("{}:{}", header.destination_addr(), udp.destination_port())
-                                    ),
-                                    Some(TransportSlice::Unknown(_)) => (
-                                        header.source_addr().to_string(),
-                                        header.destination_addr().to_string()
-                                    ),
-                                    _ => (
-                                        header.source_addr().to_string(),
-                                        header.destination_addr().to_string()
-                                    ),
-                                }
-                            },
-                            Some(InternetSlice::Ipv6(ref header, _)) => {
-                                match &parsed.transport {
-                                    Some(TransportSlice::Tcp(tcp)) => (
-                                        format!("{}:{}", header.source_addr(), tcp.source_port()),
-                                        format!("{}:{}", header.destination_addr(), tcp.destination_port())
-                                    ),
-                                    Some(TransportSlice::Udp(udp)) => (
-                                        format!("{}:{}", header.source_addr(), udp.source_port()),
-                                        format!("{}:{}", header.destination_addr(), udp.destination_port())
-                                    ),
-                                    Some(TransportSlice::Unknown(_)) => (
-                                        header.source_addr().to_string(),
-                                        header.destination_addr().to_string()
-                                    ),
-                                    _ => (
-                                        header.source_addr().to_string(),
-                                        header.destination_addr().to_string()
-                                    ),
-                                }
-                            },
-                            None => ("Unknown".to_string(), "Unknown".to_string()),
-                        };
+        match cap.next_packet() {
+            Ok(packet) => {
+                if let Ok(parsed) = SlicedPacket::from_ethernet(packet.data) {
+                    let protocol = get_protocol_name(&parsed);
+                    let (source, destination) = match &parsed.ip {
+                        Some(InternetSlice::Ipv4(ref header, _)) => match &parsed.transport {
+                            Some(TransportSlice::Tcp(tcp)) => (
+                                format!("{}:{}", header.source_addr(), tcp.source_port()),
+                                format!("{}:{}", header.destination_addr(), tcp.destination_port()),
+                            ),
+                            Some(TransportSlice::Udp(udp)) => (
+                                format!("{}:{}", header.source_addr(), udp.source_port()),
+                                format!("{}:{}", header.destination_addr(), udp.destination_port()),
+                            ),
+                            Some(TransportSlice::Unknown(_)) => (
+                                header.source_addr().to_string(),
+                                header.destination_addr().to_string(),
+                            ),
+                            _ => (
+                                header.source_addr().to_string(),
+                                header.destination_addr().to_string(),
+                            ),
+                        },
+                        Some(InternetSlice::Ipv6(ref header, _)) => match &parsed.transport {
+                            Some(TransportSlice::Tcp(tcp)) => (
+                                format!("{}:{}", header.source_addr(), tcp.source_port()),
+                                format!("{}:{}", header.destination_addr(), tcp.destination_port()),
+                            ),
+                            Some(TransportSlice::Udp(udp)) => (
+                                format!("{}:{}", header.source_addr(), udp.source_port()),
+                                format!("{}:{}", header.destination_addr(), udp.destination_port()),
+                            ),
+                            Some(TransportSlice::Unknown(_)) => (
+                                header.source_addr().to_string(),
+                                header.destination_addr().to_string(),
+                            ),
+                            _ => (
+                                header.source_addr().to_string(),
+                                header.destination_addr().to_string(),
+                            ),
+                        },
+                        None => ("Unknown".to_string(), "Unknown".to_string()),
+                    };
 
-                        let packet_info = PacketInfo {
-                            timestamp: chrono::DateTime::from_timestamp(
-                                packet.header.ts.tv_sec,
-                                packet.header.ts.tv_usec as u32 * 1000
-                            ).unwrap_or_default(),
-                            protocol,
-                            source,
-                            destination,
-                            length: packet.header.len as usize,
-                            info: get_packet_info(&parsed),
-                            raw_data: packet.data.to_vec(),
-                        };
-                        
-                        if packet_tx.blocking_send(packet_info).is_err() {
-                            break;
-                        }
+                    let packet_info = PacketInfo {
+                        timestamp: chrono::DateTime::from_timestamp(
+                            packet.header.ts.tv_sec,
+                            packet.header.ts.tv_usec as u32 * 1000,
+                        )
+                        .unwrap_or_default(),
+                        protocol,
+                        source,
+                        destination,
+                        length: packet.header.len as usize,
+                        info: get_packet_info(&parsed),
+                        raw_data: packet.data.to_vec(),
+                    };
+
+                    if packet_tx.blocking_send(packet_info).is_err() {
+                        break;
                     }
                 }
-                Err(pcap::Error::TimeoutExpired) => continue,
-                Err(_) => break,
             }
+            Err(pcap::Error::TimeoutExpired) => continue,
+            Err(_) => break,
         }
     });
 
@@ -146,8 +141,12 @@ fn get_packet_info(packet: &SlicedPacket) -> String {
                 if tcp.psh() { "PSH" } else { "" },
                 if tcp.urg() { "URG" } else { "" },
             ];
-            flags.into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join(" ")
-        },
+            flags
+                .into_iter()
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+                .join(" ")
+        }
         Some(TransportSlice::Udp(_)) => "UDP Datagram".to_string(),
         Some(TransportSlice::Icmpv4(_)) => "ICMP Message".to_string(),
         Some(TransportSlice::Icmpv6(_)) => "ICMPv6 Message".to_string(),
@@ -182,28 +181,30 @@ mod tests {
 
         let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>(1);
         let (packet_tx, _packet_rx) = mpsc::channel::<PacketInfo>(1000);
-        
+
         // Start capture in a separate task
         let capture_handle = tokio::spawn(async move {
             start_capture(
-                None, 
-                None, 
-                // None, 
+                None,
+                None,
+                // None,
                 shutdown_rx,
-                packet_tx
-            ).await
+                packet_tx,
+            )
+            .await
         });
 
         // Send shutdown signal immediately
-        shutdown_tx.send(()).await.expect("Failed to send shutdown signal");
-        
+        shutdown_tx
+            .send(())
+            .await
+            .expect("Failed to send shutdown signal");
+
         // Wait for capture to finish with timeout
         match timeout(Duration::from_secs(5), capture_handle).await {
-            Ok(result) => {
-                match result {
-                    Ok(capture_result) => assert!(capture_result.is_ok()),
-                    Err(e) => panic!("Capture thread panicked: {:?}", e),
-                }
+            Ok(result) => match result {
+                Ok(capture_result) => assert!(capture_result.is_ok()),
+                Err(e) => panic!("Capture thread panicked: {:?}", e),
             },
             Err(_) => panic!("Test timed out"),
         }
@@ -221,7 +222,7 @@ mod tests {
                 let dev_name = dev.name.clone();
                 let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>(1);
                 let (packet_tx, _packet_rx) = mpsc::channel::<PacketInfo>(1000);
-                
+
                 // Start capture in a separate task
                 let capture_handle = tokio::spawn(async move {
                     start_capture(
@@ -229,20 +230,22 @@ mod tests {
                         None,
                         // None,
                         shutdown_rx,
-                        packet_tx
-                    ).await
+                        packet_tx,
+                    )
+                    .await
                 });
 
                 // Send shutdown signal immediately
-                shutdown_tx.send(()).await.expect("Failed to send shutdown signal");
-                
+                shutdown_tx
+                    .send(())
+                    .await
+                    .expect("Failed to send shutdown signal");
+
                 // Wait for capture to finish with timeout
                 match timeout(Duration::from_secs(5), capture_handle).await {
-                    Ok(result) => {
-                        match result {
-                            Ok(capture_result) => assert!(capture_result.is_ok()),
-                            Err(e) => panic!("Capture thread panicked: {:?}", e),
-                        }
+                    Ok(result) => match result {
+                        Ok(capture_result) => assert!(capture_result.is_ok()),
+                        Err(e) => panic!("Capture thread panicked: {:?}", e),
                     },
                     Err(_) => panic!("Test timed out"),
                 }
@@ -259,7 +262,7 @@ mod tests {
 
         let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>(1);
         let (packet_tx, _packet_rx) = mpsc::channel::<PacketInfo>(1000);
-        
+
         // Start capture in a separate task
         let capture_handle = tokio::spawn(async move {
             start_capture(
@@ -267,20 +270,22 @@ mod tests {
                 Some("tcp".to_string()),
                 // None,
                 shutdown_rx,
-                packet_tx
-            ).await
+                packet_tx,
+            )
+            .await
         });
 
         // Send shutdown signal immediately
-        shutdown_tx.send(()).await.expect("Failed to send shutdown signal");
-        
+        shutdown_tx
+            .send(())
+            .await
+            .expect("Failed to send shutdown signal");
+
         // Wait for capture to finish with timeout
         match timeout(Duration::from_secs(5), capture_handle).await {
-            Ok(result) => {
-                match result {
-                    Ok(capture_result) => assert!(capture_result.is_ok()),
-                    Err(e) => panic!("Capture thread panicked: {:?}", e),
-                }
+            Ok(result) => match result {
+                Ok(capture_result) => assert!(capture_result.is_ok()),
+                Err(e) => panic!("Capture thread panicked: {:?}", e),
             },
             Err(_) => panic!("Test timed out"),
         }
@@ -291,15 +296,16 @@ mod tests {
     async fn test_invalid_interface() {
         let (_, shutdown_rx) = mpsc::channel::<()>(1);
         let (packet_tx, _packet_rx) = mpsc::channel::<PacketInfo>(1000);
-        
+
         let result = start_capture(
             Some("invalid_device".to_string()),
             None,
             // None,
             shutdown_rx,
-            packet_tx
-        ).await;
-        
+            packet_tx,
+        )
+        .await;
+
         assert!(result.is_err());
     }
 
@@ -307,15 +313,16 @@ mod tests {
     async fn test_invalid_filter() {
         let (_, shutdown_rx) = mpsc::channel::<()>(1);
         let (packet_tx, _packet_rx) = mpsc::channel::<PacketInfo>(1000);
-        
+
         let result = start_capture(
             None,
             Some("invalid filter syntax".to_string()),
             // None,
             shutdown_rx,
-            packet_tx
-        ).await;
-        
+            packet_tx,
+        )
+        .await;
+
         assert!(result.is_err());
     }
 }

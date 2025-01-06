@@ -1,8 +1,8 @@
+use chrono::Utc;
 use criterion::{criterion_group, criterion_main, Criterion};
 use ferriscope::capture;
 use ferriscope::ui::PacketInfo;
 use tokio::sync::mpsc;
-use chrono::Utc;
 
 pub fn capture_benchmark(c: &mut Criterion) {
     let runtime = tokio::runtime::Runtime::new().unwrap();
@@ -11,7 +11,7 @@ pub fn capture_benchmark(c: &mut Criterion) {
         b.iter(|| {
             runtime.block_on(async {
                 let (packet_tx, mut packet_rx) = mpsc::channel::<PacketInfo>(1000);
-                
+
                 // Simulate packet capture by sending a test packet
                 let test_packet = PacketInfo {
                     timestamp: Utc::now(),
@@ -24,7 +24,7 @@ pub fn capture_benchmark(c: &mut Criterion) {
                 };
 
                 packet_tx.send(test_packet).await.unwrap();
-                
+
                 // Process one packet
                 packet_rx.recv().await
             });
@@ -36,7 +36,7 @@ pub fn capture_benchmark(c: &mut Criterion) {
             runtime.block_on(async {
                 let (packet_tx, _packet_rx) = mpsc::channel::<PacketInfo>(1000);
                 let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
-                
+
                 // Start mock capture with filter
                 let handle = tokio::spawn(async move {
                     let test_packet = PacketInfo {
@@ -48,12 +48,12 @@ pub fn capture_benchmark(c: &mut Criterion) {
                         info: "Test packet".to_string(),
                         raw_data: vec![0; 64],
                     };
-                    
+
                     // Simulate filter processing
                     if test_packet.protocol == "TCP" {
                         packet_tx.send(test_packet).await.unwrap();
                     }
-                    
+
                     shutdown_rx.recv().await
                 });
 
@@ -71,4 +71,4 @@ criterion_group!(
     config = Criterion::default().sample_size(50);
     targets = capture_benchmark
 );
-criterion_main!(benches); 
+criterion_main!(benches);

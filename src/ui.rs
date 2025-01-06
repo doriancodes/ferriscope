@@ -1,20 +1,20 @@
-use ratatui::{
-    backend::CrosstermBackend,
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
-    layout::{Layout, Constraint, Direction},
-    Terminal,
-    style::{Style, Color},
-};
 use crossterm::{
     event::{self, Event, KeyCode},
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use ratatui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    Terminal,
 };
 use std::error::Error;
-use tokio::sync::mpsc;
 use std::io::stdout;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use tokio::sync::mpsc;
 
 pub struct App {
     terminal: Terminal<CrosstermBackend<std::io::Stdout>>,
@@ -36,7 +36,9 @@ pub struct PacketInfo {
 }
 
 impl App {
-    pub fn new(packet_rx: mpsc::Receiver<PacketInfo>) -> Result<Self, Box<dyn Error + Send + Sync>> {
+    pub fn new(
+        packet_rx: mpsc::Receiver<PacketInfo>,
+    ) -> Result<Self, Box<dyn Error + Send + Sync>> {
         let mut stdout = stdout();
         execute!(stdout, EnterAlternateScreen)?;
         enable_raw_mode()?;
@@ -98,17 +100,15 @@ impl App {
     fn draw(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
         self.terminal.draw(|frame| {
             let size = frame.area();
-            
+
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints([
-                    Constraint::Percentage(70),
-                    Constraint::Percentage(30),
-                ].as_ref())
+                .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
                 .split(size);
 
             // Packet list
-            let items: Vec<ListItem> = self.packets
+            let items: Vec<ListItem> = self
+                .packets
                 .iter()
                 .enumerate()
                 .map(|(i, p)| {
@@ -117,7 +117,7 @@ impl App {
                     } else {
                         Style::default()
                     };
-                    
+
                     ListItem::new(format!(
                         "{} {} {} -> {} [{}] {}",
                         p.timestamp.format("%H:%M:%S%.3f"),
@@ -126,14 +126,17 @@ impl App {
                         p.destination,
                         p.length,
                         p.info
-                    )).style(style)
+                    ))
+                    .style(style)
                 })
                 .collect();
 
             let list = List::new(items)
-                .block(Block::default()
-                    .title("Network Packets")
-                    .borders(Borders::ALL))
+                .block(
+                    Block::default()
+                        .title("Network Packets")
+                        .borders(Borders::ALL),
+                )
                 .highlight_style(Style::default().fg(Color::Yellow));
 
             frame.render_widget(list, chunks[0]);
@@ -151,12 +154,15 @@ impl App {
                         String::new(),
                         "Raw Data (hex):".to_string(),
                         format_hex_dump(&packet.raw_data),
-                    ].join("\n");
+                    ]
+                    .join("\n");
 
                     let details_widget = Paragraph::new(details)
-                        .block(Block::default()
-                            .title("Packet Details")
-                            .borders(Borders::ALL))
+                        .block(
+                            Block::default()
+                                .title("Packet Details")
+                                .borders(Borders::ALL),
+                        )
                         .wrap(Wrap { trim: true });
 
                     frame.render_widget(details_widget, chunks[1]);
@@ -194,14 +200,14 @@ fn format_hex_dump(data: &[u8]) -> String {
     let mut output = String::new();
     for (i, chunk) in data.chunks(16).enumerate() {
         output.push_str(&format!("{:08x}  ", i * 16));
-        
+
         for (j, byte) in chunk.iter().enumerate() {
             output.push_str(&format!("{:02x}", byte));
             if j % 2 == 1 {
                 output.push(' ');
             }
         }
-        
+
         // Pad with spaces if this row is shorter than 16 bytes
         for _ in chunk.len()..16 {
             output.push_str("  ");
@@ -209,7 +215,7 @@ fn format_hex_dump(data: &[u8]) -> String {
                 output.push(' ');
             }
         }
-        
+
         output.push_str(" |");
         for byte in chunk {
             if byte.is_ascii_graphic() {
@@ -222,5 +228,3 @@ fn format_hex_dump(data: &[u8]) -> String {
     }
     output
 }
-
-

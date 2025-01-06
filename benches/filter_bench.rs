@@ -1,16 +1,16 @@
+use chrono::Utc;
 use criterion::{criterion_group, criterion_main, Criterion};
 use ferriscope::filters;
 use ferriscope::ui::PacketInfo;
-use chrono::Utc;
 
 pub fn filter_benchmark(c: &mut Criterion) {
     // Initialize pcap with loopback interface and no promiscuous mode
-    let _ = pcap::Capture::<pcap::Inactive>::from_device("lo0")  // lo0 is macOS loopback
+    let _ = pcap::Capture::<pcap::Inactive>::from_device("lo0") // lo0 is macOS loopback
         .unwrap()
-        .promisc(false)  // Explicitly disable promiscuous mode
+        .promisc(false) // Explicitly disable promiscuous mode
         .snaplen(65535)
         .timeout(1000)
-        .immediate_mode(true)  // Add immediate mode for better performance
+        .immediate_mode(true) // Add immediate mode for better performance
         .open()
         .unwrap();
 
@@ -22,11 +22,8 @@ pub fn filter_benchmark(c: &mut Criterion) {
         length: 64,
         info: "TCP packet".to_string(),
         raw_data: vec![
-            0x45, 0x00, 0x00, 0x28,
-            0x00, 0x00, 0x40, 0x00,
-            0x40, 0x06, 0x00, 0x00,
-            0x7f, 0x00, 0x00, 0x01,
-            0xc0, 0xa8, 0x01, 0x01
+            0x45, 0x00, 0x00, 0x28, 0x00, 0x00, 0x40, 0x00, 0x40, 0x06, 0x00, 0x00, 0x7f, 0x00,
+            0x00, 0x01, 0xc0, 0xa8, 0x01, 0x01,
         ],
     };
 

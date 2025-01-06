@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     // Initialize the UI with packet receiver
     let mut app = ui::App::new(packet_rx)?;
-    
+
     // Start capture in background
     let _capture_handle = tokio::spawn(async move {
         if let Err(e) = capture::start_capture(
@@ -45,7 +45,9 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             // args.output,
             shutdown_rx,
             packet_tx,
-        ).await {
+        )
+        .await
+        {
             eprintln!("Capture error: {}", e);
         }
     });
