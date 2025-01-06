@@ -28,7 +28,11 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Run tests
-        run: sudo -E cargo test --verbose
+        run: |
+          # Build tests first
+          cargo test --no-run
+          # Run tests with sudo using full path
+          sudo -E env "PATH=$PATH" cargo test --verbose
 
       - name: Run clippy
         run: cargo clippy -- -D warnings
@@ -54,11 +58,11 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build benchmarks
-        run: sudo -E cargo bench --no-run
+        run: cargo bench --no-run
 
       - name: Set capabilities and run benchmarks
         run: |
           sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/filter_bench-*
           sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/capture_bench-*
           sudo setcap cap_net_raw,cap_net_admin=eip target/release/deps/analyzer_bench-*
-          cargo 
+          sudo -E env "PATH=$PATH"cargo bench 
